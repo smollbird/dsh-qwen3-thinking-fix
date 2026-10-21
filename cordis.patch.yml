@@ -1,0 +1,8 @@
+# dsh-qwen3-thinking-fix bundle layer：作为 profile bundle 使用时自动挂载（package.json dsh.bundle.patch）。
+# 直接以 patch entry 安装的部署可使用：
+#   - insert:
+#       - id: dsh-qwen3-thinking-fix
+#         name: dsh-qwen3-thinking-fix
+- insert:
+    - id: dsh-qwen3-thinking-fix
+      name: dsh-qwen3-thinking-fix

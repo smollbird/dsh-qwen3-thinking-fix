@@ -1,0 +1,28 @@
+{
+  "name": "dsh-qwen3-thinking-fix",
+  "version": "0.2.9",
+  "description": "DSH 插件：规范化 Qwen3 思考/工具调用边界 —— 模型在思考阶段决定调用工具时可能不输出 </thinking> 直接以 <tool_call> 开头，本插件在 llm/stream 瀑布中拦截并修复；工具调用一律延迟到消息末尾发射，避免助手消息里 tool_use 之后还有正文导致会话被服务端 400 毒化。",
+  "keywords": ["dsh", "dsh-plugin", "qwen3", "thinking", "tool-call", "deepseek", "deepseek-harness"],
+  "type": "module",
+  "main": "./lib/index.js",
+  "exports": {
+    ".": {
+      "default": "./lib/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": ["index.js", "lib", "cordis.patch.yml", "README.md", "CHANGELOG.md"],
+  "scripts": {
+    "test": "node --test \"test/*.test.mjs\"",
+    "pack": "pnpm pack"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.0"
+  },
+  "license": "MIT"
+}
