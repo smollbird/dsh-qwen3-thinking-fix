@@ -2,7 +2,84 @@
 
 DSH 插件：规范化 Qwen3 的思考 / 工具调用边界，让工具调用在 agent loop 里不丢。
 
-当前版本：**0.2.9**（变更见 [CHANGELOG.md](./CHANGELOG.md)）。
+仓库：<https://github.com/smollbird/dsh-qwen3-thinking-fix> · 当前版本：**0.2.9**（变更见 [CHANGELOG.md](./CHANGELOG.md)）
+
+## 安装
+
+包内自带 `cordis.patch.yml`（`package.json` 的 `dsh.bundle.patch` 声明），用下面的任一方式装进 profile 后 **host 端自动注册 bundle，无需手动往 `cordis.patch.yml` 写 insert**。装完重启 DSH（桌面版 / `dsh web`）即生效。
+
+### 方式一：DSH 插件面板（推荐）
+
+1. 打开 DSH →「插件」→ 右上角 **「+ 添加插件」**；
+2. 输入框**直接填 GitHub 仓库地址**（不是包名），点 **「安装」**：
+
+   ```text
+   https://github.com/smollbird/dsh-qwen3-thinking-fix.git
+   ```
+
+   > ⚠️ 这里**不能只填包名** `dsh-qwen3-thinking-fix`：面板会把裸包名当作 registry 查询（走右下角"安装源"，默认中国大陆镜像 npmmirror），而本包尚未发布到 npm，所以会显示"未找到相关插件"。填完整仓库 URL 则走 git 安装，与安装源无关。
+   >
+   > 想锁版本可在 URL 后加 ref（如 `...git#v0.2.9`）。
+
+3. 安装完成后重启 DSH 即可。
+
+> git 来源安装时 pnpm 会执行包的 prepare 脚本，若被拦截，按终端提示把打印的 key 加进 profile 目录的 `pnpm-workspace.yaml` 的 `allowBuilds`，再重新安装一次。
+
+### 方式二：dsh CLI
+
+```sh
+# 从 GitHub 安装（main 分支最新代码）
+dsh plugin --profile web add github:smollbird/dsh-qwen3-thinking-fix
+
+# 或锁定发布 tag
+dsh plugin --profile web add github:smollbird/dsh-qwen3-thinking-fix#v0.2.9
+```
+
+其它 profile 把 `web` 换成对应名字（如 `desktop`）。卸载：
+
+```sh
+dsh plugin --profile web remove dsh-qwen3-thinking-fix
+```
+
+> ⚠️ **裸包名现在装不了**：`dsh plugin add <包名>` 和插件面板一样，都是把裸名字发到 npm registry 查询；本包还没 `npm publish`，registry 上没有它，所以会报 not found。**必须带 `github:` 前缀**（或完整 URL）才走 git 安装。等发布到 npm 后，裸包名即可直接用。
+
+### 方式三：本地源码 link（开发用，改源码重启即生效）
+
+profile 的 `package.json`：
+
+```json
+{
+  "dependencies": {
+    "dsh-qwen3-thinking-fix": "link:/abs/path/dsh-qwen3-thinking-fix"
+  },
+  "dsh": {
+    "profile": {
+      "bundles": ["dsh-qwen3-thinking-fix"]
+    }
+  }
+}
+```
+
+然后在 profile 目录执行 `pnpm install`，重启桌面版 / 重载 profile。
+bundle 自带 `cordis.patch.yml`，不需要手写 entry。
+
+### 方式四：release tarball（稳定版）
+
+```sh
+dsh plugin --profile web add file:/abs/path/dsh-qwen3-thinking-fix-0.2.9.tgz
+```
+
+注意 `file:` 是**拷贝**安装（改源码后要重新打包再装）；要改源码即生效请用 `link:`。
+tarball 可用 `pnpm pack` 在本仓库根目录生成：
+
+```sh
+pnpm pack      # 产出 dsh-qwen3-thinking-fix-<version>.tgz
+```
+
+包内只含 `index.js` / `lib` / `cordis.patch.yml` / `README.md` / `CHANGELOG.md` / `package.json`
+（`files` 白名单，测试不进包）。这个 tarball 就是可直接 `npm publish` 的形态。
+
+> ⚠️ **不要再往 profile 的 `cordis.patch.yml` 手动 insert 本插件**：bundle patch 已自动注册，重复 insert 同 id 会让加载器报 duplicate loader entry id 无法启动。旧版本按旧文档手动 insert 过的，请删除那行 insert。
 
 ## 问题
 
@@ -66,46 +143,6 @@ DashScope 等的 tool-call parser，或中间网关）。DSH 侧只消费结构�
 工具表里才切分"的旧行为，把 `strictToolList` 设为 `true`。
 
 失败模型：任何内部异常都降级为透传，监听器绝不 throw。
-
-## 安装
-
-### A. link 安装（开发用，改源码重启即生效）
-
-profile 的 `package.json`：
-
-```json
-{
-  "dependencies": {
-    "dsh-qwen3-thinking-fix": "link:/abs/path/dsh-qwen3-thinking-fix"
-  },
-  "dsh": {
-    "profile": {
-      "bundles": ["dsh-qwen3-thinking-fix"]
-    }
-  }
-}
-```
-
-然后在 profile 目录执行 `pnpm install`，重启桌面版 / 重载 profile。
-包名加进 `dsh.profile.bundles` 即可 —— bundle 自带 `cordis.patch.yml`，不需要手写 entry。
-
-### B. release tarball（稳定版）
-
-```sh
-pnpm add file:/abs/path/dsh-qwen3-thinking-fix-0.2.0.tgz
-```
-
-注意 `file:` 是**拷贝**安装（改源码后要重新打包再装）；要改源码即生效请用 `link:`。
-bundle 依然要加进 `dsh.profile.bundles`。
-
-### 打包 release
-
-```sh
-node /path/to/pnpm.mjs pack      # 产出 dsh-qwen3-thinking-fix-<version>.tgz
-```
-
-包内只含 `index.js` / `lib` / `cordis.patch.yml` / `README.md` / `CHANGELOG.md` / `package.json`
-（`files` 白名单，测试不进包）。这个 tarball 就是可直接 `npm publish` 的形态。
 
 ## 配置
 
